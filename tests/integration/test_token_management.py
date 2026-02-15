@@ -35,8 +35,8 @@ class TestTokenManagement:
         
         data = refresh_response.json()
         assert "access_token" in data
+        assert "expires_in" in data
         
-        # Validate Schema
         RefreshResponse(**data)
         
     def test_logout_success(self, api_client: AuthClient, new_user_payload):

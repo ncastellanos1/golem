@@ -24,9 +24,9 @@ class TestAuthFlow:
         # Note: Spec says it logs in immediately
         data = response.json()
         assert "access_token" in data
+        assert "expires_in" in data
         assert "user" in data
         
-        # Schema Validation
         AuthResponse(**data)
         
     def test_register_duplicate_email(self, auth_client, new_user_payload):
@@ -63,8 +63,8 @@ class TestAuthFlow:
         assert response.status_code == 200
         data = response.json()
         
-        # Verify Body
-        assert "access_token" in data or "token" in data
+        assert "access_token" in data
+        assert "expires_in" in data
         
         # Verify Cookie
         # Note: requests-mock might not populate response.cookies from 'Set-Cookie' header automatically 

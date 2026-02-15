@@ -9,6 +9,7 @@ class UserDTO(BaseModel):
 
 class AuthResponse(BaseModel):
     access_token: str
+    expires_in: int
     user: UserDTO
 
 class ErrorResponse(BaseModel):

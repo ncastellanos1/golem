@@ -24,6 +24,7 @@ class TestAuthContract:
         """
         data = {
             "access_token": "paseto.v4.local.token...",
+            "expires_in": 900,
             "user": {
                 "id": "uuid-1234",
                 "username": "testuser",
