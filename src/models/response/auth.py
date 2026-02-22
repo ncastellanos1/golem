@@ -13,8 +13,10 @@ class AuthResponse(BaseModel):
     user: UserDTO
 
 class ErrorResponse(BaseModel):
-    type: str
-    title: str
-    status: int
-    detail: str
+    type: Optional[str] = None
+    title: Optional[str] = None
+    status: Optional[int] = None
+    detail: Optional[str] = None
     instance: Optional[str] = None
+    code: Optional[str] = None
+    message: Optional[str] = None
