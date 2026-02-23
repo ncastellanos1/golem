@@ -62,6 +62,25 @@ class TestAIFlow:
         res_del = ai_client.delete_base_prompt("budget_analysis", **auth_session)
         assert res_del.status_code == 204
 
+    def test_create_duplicate_base_prompt(self, ai_client, auth_session):
+        prompt_key = f"duplicate_test_{uuid.uuid4().hex[:8]}"
+        base_payload = {"key": prompt_key, "template": "Test 1: {{data}}"}
+        res_create = ai_client.create_base_prompt(base_payload, **auth_session)
+        assert res_create.status_code == 201
+
+        res_conflict = ai_client.create_base_prompt(base_payload, **auth_session)
+        assert res_conflict.status_code == 409
+
+        from src.models.response.auth import ErrorResponse
+        error_data = res_conflict.json()
+        ErrorResponse(**error_data)
+
+        error_message = error_data.get("title", "") or error_data.get("message", "") or error_data.get("detail", "")
+        assert "Ya existe un prompt con esta llave" in error_message
+
+        ai_client.delete_base_prompt(prompt_key, **auth_session)
+
+
     @pytest.mark.parametrize("scenario,payload,expected_status", [
         ("Valid Feedback", {"rating": 4, "comment": "La categoría asignada fue buena."}, 201),
         ("Invalid Rating High", {"rating": 6}, 400),
