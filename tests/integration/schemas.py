@@ -19,3 +19,28 @@ class TransactionModel(BaseModel):
 
 class TransactionResponseModel(BaseModel):
     data: TransactionModel
+
+# Request Models
+class BasePromptRequest(BaseModel):
+    key: str
+    template: str
+
+class PromptOverrideRequest(BaseModel):
+    template: str
+
+class FeedbackRequest(BaseModel):
+    usage_id: str
+    rating: int
+    comment: Optional[str] = None
+
+class TransactionAIPayloadRequest(BaseModel):
+    description: str
+
+class RegisterUserRequest(BaseModel):
+    email: str
+    username: str
+    password: str
+
+class LoginUserRequest(BaseModel):
+    email: str
+    password: str
