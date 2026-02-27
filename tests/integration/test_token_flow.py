@@ -1,9 +1,13 @@
 import pytest
-import requests
+import re
+from http import HTTPStatus
 from src.client.auth import AuthClient
 from src.models.response.auth import AuthResponse
 from src.models.response.refresh import RefreshResponse
 from tests.integration.schemas import RegisterUserRequest, LoginUserRequest
+
+COOKIE_REFRESH_TOKEN = "refresh_token"
+HEADER_SET_COOKIE = "Set-Cookie"
 
 @pytest.mark.integration
 class TestTokenFlow:
@@ -20,19 +24,18 @@ class TestTokenFlow:
         
         auth_client.register(register_payload)
         login_response = auth_client.login(login_payload)
-        assert login_response.status_code == 200
+        assert login_response.status_code == HTTPStatus.OK
         
         cookies = {}
-        cookie_header = login_response.headers.get("Set-Cookie", "")
-        if "refresh_token" in cookie_header:
-             import re
-             match = re.search(r'refresh_token=([^;]+)', cookie_header)
+        cookie_header = login_response.headers[HEADER_SET_COOKIE] if HEADER_SET_COOKIE in login_response.headers else ""
+        if COOKIE_REFRESH_TOKEN in cookie_header:
+             match = re.search(rf'{COOKIE_REFRESH_TOKEN}=([^;]+)', cookie_header)
              if match:
-                 cookies["refresh_token"] = match.group(1)
+                 cookies[COOKIE_REFRESH_TOKEN] = match.group(1)
         
         refresh_response = auth_client.refresh_token(cookies=cookies)
         
-        assert refresh_response.status_code == 200, f"Refresh failed: {refresh_response.text}"
+        assert refresh_response.status_code == HTTPStatus.OK, f"Refresh failed: {refresh_response.text}"
         
         data = refresh_response.json()
         assert "access_token" in data
@@ -54,19 +57,18 @@ class TestTokenFlow:
         login_response = auth_client.login(login_payload)
         
         cookies = {}
-        cookie_header = login_response.headers.get("Set-Cookie", "")
-        if "refresh_token" in cookie_header:
-             import re
-             match = re.search(r'refresh_token=([^;]+)', cookie_header)
+        cookie_header = login_response.headers[HEADER_SET_COOKIE] if HEADER_SET_COOKIE in login_response.headers else ""
+        if COOKIE_REFRESH_TOKEN in cookie_header:
+             match = re.search(rf'{COOKIE_REFRESH_TOKEN}=([^;]+)', cookie_header)
              if match:
-                 cookies["refresh_token"] = match.group(1)
+                 cookies[COOKIE_REFRESH_TOKEN] = match.group(1)
 
         logout_response = auth_client.logout(cookies=cookies) 
         
-        assert logout_response.status_code == 200
+        assert logout_response.status_code == HTTPStatus.OK
         
-        cookie_header = logout_response.headers.get("Set-Cookie", "")
-        assert "refresh_token=;" in cookie_header or "Max-Age=0" in cookie_header
+        cookie_header = logout_response.headers[HEADER_SET_COOKIE] if HEADER_SET_COOKIE in logout_response.headers else ""
+        assert f"{COOKIE_REFRESH_TOKEN}=;" in cookie_header or "Max-Age=0" in cookie_header
         
     def test_refresh_without_cookie(self, auth_client: AuthClient):
         """
@@ -75,4 +77,4 @@ class TestTokenFlow:
         auth_client.session.cookies.clear()
         
         response = auth_client.refresh_token()
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED

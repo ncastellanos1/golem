@@ -1,5 +1,16 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
+
+class PromptOverrideModel(BaseModel):
+    id: str
+    user_id: str
+    prompt_key: str
+    template: str
+    created_at: str
+    updated_at: str
+
+class ListPromptOverridesResponse(BaseModel):
+    data: Optional[List[PromptOverrideModel]] = None
 
 class CategoryModel(BaseModel):
     id: str

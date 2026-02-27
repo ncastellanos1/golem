@@ -16,6 +16,7 @@ pydantic_core==2.41.5
 Pygments==2.19.2
 PyJWT==2.11.0
 pytest==8.4.2
+pytest-xdist==3.8.0
 pytest-html==4.2.0
 pytest-metadata==3.1.1
 python-dotenv==1.2.1

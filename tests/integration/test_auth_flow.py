@@ -1,7 +1,12 @@
 import pytest
+from http import HTTPStatus
 from src.client.auth import AuthClient
 from src.models.response.auth import AuthResponse, ErrorResponse
 from tests.integration.schemas import RegisterUserRequest, LoginUserRequest
+
+
+COOKIE_REFRESH_TOKEN = "refresh_token"
+HEADER_SET_COOKIE = "Set-Cookie"
 
 
 @pytest.mark.integration
@@ -12,7 +17,7 @@ class TestAuthFlow:
         """
         payload = RegisterUserRequest(**new_user_payload).model_dump()
         response = auth_client.register(payload)
-        assert response.status_code in [200, 201]
+        assert response.status_code in [HTTPStatus.OK, HTTPStatus.CREATED]
         AuthResponse(**response.json())
         
     def test_register_duplicate_email(self, auth_client, new_user_payload):
@@ -22,7 +27,7 @@ class TestAuthFlow:
         payload = RegisterUserRequest(**new_user_payload).model_dump()
         auth_client.register(payload)
         response = auth_client.register(payload)
-        assert response.status_code == 409
+        assert response.status_code == HTTPStatus.CONFLICT
         ErrorResponse(**response.json())
 
     def test_login_success(self, auth_client, new_user_payload):
@@ -38,15 +43,14 @@ class TestAuthFlow:
         ).model_dump()
         response = auth_client.login(login_payload)
         
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
         AuthResponse(**response.json())
         
-        val = response.cookies.get("refresh_token")
-        if val:
-             assert len(val) > 0
+        if COOKIE_REFRESH_TOKEN in response.cookies:
+             assert len(response.cookies[COOKIE_REFRESH_TOKEN]) > 0
         else:
-             header = response.headers.get("Set-Cookie")
-             assert header and "refresh_token" in header
+             header = response.headers[HEADER_SET_COOKIE] if HEADER_SET_COOKIE in response.headers else None
+             assert header and COOKIE_REFRESH_TOKEN in header
         
     def test_login_invalid_credentials(self, auth_client, faker):
         """
@@ -58,5 +62,5 @@ class TestAuthFlow:
         ).model_dump()
         response = auth_client.login(login_payload)
         
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
         
