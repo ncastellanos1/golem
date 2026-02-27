@@ -12,12 +12,16 @@ class BaseClient:
         
         # Configure Retries
         retries = Retry(
-            total=3,
-            backoff_factor=0.3,
+            total=5,
+            backoff_factor=0.5,
             status_forcelist=[500, 502, 503, 504],
+            allowed_methods=["HEAD", "GET", "OPTIONS", "POST", "PUT", "DELETE", "PATCH"],
+            raise_on_status=False
         )
-        self.session.mount("http://", HTTPAdapter(max_retries=retries))
-        self.session.mount("https://", HTTPAdapter(max_retries=retries))
+        # Enable retries for all requests by mounting the adapter
+        adapter = HTTPAdapter(max_retries=retries)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
         
         self.logger = logging.getLogger(__name__)
 

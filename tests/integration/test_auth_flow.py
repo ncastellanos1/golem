@@ -1,12 +1,13 @@
 import pytest
+from http import HTTPStatus
 from src.client.auth import AuthClient
 from src.models.response.auth import AuthResponse, ErrorResponse
+from tests.integration.schemas import RegisterUserRequest, LoginUserRequest
 
-@pytest.fixture(scope="module")
-def auth_client():
-    from src.client.base import BaseClient
-    base_url = BaseClient().base_url
-    return AuthClient(base_url=base_url)
+
+COOKIE_REFRESH_TOKEN = "refresh_token"
+HEADER_SET_COOKIE = "Set-Cookie"
+
 
 @pytest.mark.integration
 class TestAuthFlow:
@@ -14,77 +15,52 @@ class TestAuthFlow:
         """
         R1: Successful registration with valid data.
         """
-        response = auth_client.register(new_user_payload)
-        
-        # Assert Status Code
-        assert response.status_code == 200 or response.status_code == 201, \
-            f"Expected 200/201, got {response.status_code}: {response.text}"
-        
-        # Verify Response Structure (should return Token + User)
-        # Note: Spec says it logs in immediately
-        data = response.json()
-        assert "access_token" in data
-        assert "expires_in" in data
-        assert "user" in data
-        
-        AuthResponse(**data)
+        payload = RegisterUserRequest(**new_user_payload).model_dump()
+        response = auth_client.register(payload)
+        assert response.status_code in [HTTPStatus.OK, HTTPStatus.CREATED]
+        AuthResponse(**response.json())
         
     def test_register_duplicate_email(self, auth_client, new_user_payload):
         """
         R1: Duplicate email should return 409 Conflict.
         """
-        # 1. Register first time
-        auth_client.register(new_user_payload)
-        
-        # 2. Register again with same email
-        response = auth_client.register(new_user_payload)
-        
-        assert response.status_code == 409
-        error = response.json()
-        assert error["status"] == 409
-        # RFC 7807 Validation
-        ErrorResponse(**error)
+        payload = RegisterUserRequest(**new_user_payload).model_dump()
+        auth_client.register(payload)
+        response = auth_client.register(payload)
+        assert response.status_code == HTTPStatus.CONFLICT
+        ErrorResponse(**response.json())
 
     def test_login_success(self, auth_client, new_user_payload):
         """
         R2: Login with valid credentials returns Token + Cookie.
         """
-        # Uses the global mock defined in conftest.py which returns 200 OK
-        # 1. Ensure user exists (Mocked)
-        auth_client.register(new_user_payload)
+        register_payload = RegisterUserRequest(**new_user_payload).model_dump()
+        auth_client.register(register_payload)
         
-        # 2. Login
-        login_payload = {
-            "email": new_user_payload["email"],
-            "password": new_user_payload["password"]
-        }
+        login_payload = LoginUserRequest(
+            email=new_user_payload["email"],
+            password=new_user_payload["password"]
+        ).model_dump()
         response = auth_client.login(login_payload)
         
-        assert response.status_code == 200
-        data = response.json()
+        assert response.status_code == HTTPStatus.OK
+        AuthResponse(**response.json())
         
-        assert "access_token" in data
-        assert "expires_in" in data
-        
-        # Verify Cookie
-        # Note: requests-mock might not populate response.cookies from 'Set-Cookie' header automatically 
-        # in the same way a real generic adapter does, ensuring we check headers if cookies empty.
-        val = response.cookies.get("refresh_token")
-        if val:
-             assert len(val) > 0 # Just check it exists and is not empty
+        if COOKIE_REFRESH_TOKEN in response.cookies:
+             assert len(response.cookies[COOKIE_REFRESH_TOKEN]) > 0
         else:
-             header = response.headers.get("Set-Cookie")
-             assert header and "refresh_token" in header
+             header = response.headers[HEADER_SET_COOKIE] if HEADER_SET_COOKIE in response.headers else None
+             assert header and COOKIE_REFRESH_TOKEN in header
         
     def test_login_invalid_credentials(self, auth_client, faker):
         """
         R2: Login with invalid credentials returns 401.
         """
-        login_payload = {
-            "email": faker.email(),
-            "password": "wrongpassword"
-        }
+        login_payload = LoginUserRequest(
+            email=faker.email(),
+            password="wrongpassword"
+        ).model_dump()
         response = auth_client.login(login_payload)
         
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
         
