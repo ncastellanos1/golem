@@ -9,7 +9,7 @@
       "args": [
         "tests"
       ],
-      "console": "integratedTerminal",
+      "console": "internalConsole",
       "justMyCode": false,
       "python": "${workspaceFolder}/venv/bin/python",
       "env": {
@@ -25,7 +25,7 @@
       "args": [
         "${file}"
       ],
-      "console": "integratedTerminal",
+      "console": "internalConsole",
       "justMyCode": false,
       "python": "${workspaceFolder}/venv/bin/python",
       "env": {
