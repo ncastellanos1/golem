@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python: Pytest",
+      "name": "🚀 Run All Integration Tests (Pytest)",
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
@@ -18,7 +18,7 @@
       "cwd": "${workspaceFolder}"
     },
     {
-      "name": "Python: Current Test File",
+      "name": "🚀 Run Current Test (Pytest)",
       "type": "debugpy",
       "request": "launch",
       "module": "pytest",
